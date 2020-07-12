@@ -21,8 +21,9 @@ import org.apache.dubbo.common.extension.Adaptive;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.extension.ext8_add.AddExt1;
 
-@Adaptive
+//@Adaptive
 public class AddExt1_ManualAdaptive implements AddExt1 {
+    @Adaptive
     public String echo(URL url, String s) {
         AddExt1 addExt1 = ExtensionLoader.getExtensionLoader(AddExt1.class).getExtension(url.getParameter("add.ext1"));
         return addExt1.echo(url, s);

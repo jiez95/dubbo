@@ -415,11 +415,17 @@ public class ExtensionLoader<T> {
         if ("true".equals(name)) {
             return getDefaultExtension();
         }
+        /**
+         * 获取对象化持有的holder,如果不存在就直接new一个
+         */
         final Holder<Object> holder = getOrCreateHolder(name);
         Object instance = holder.get();
         if (instance == null) {
             synchronized (holder) {
                 instance = holder.get();
+                /**
+                 * double check 之后返现目标实例依旧不存在，则进行创建，结束后把实例赋值给holderww
+                 */
                 if (instance == null) {
                     instance = createExtension(name);
                     holder.set(instance);
@@ -620,21 +626,32 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     private T createExtension(String name) {
+        /**
+         * 获取需要SPI扩展的 Class
+         *  -> 先从缓存中获取，不存在则在文件目录中加载出来并放入缓存
+         */
         Class<?> clazz = getExtensionClasses().get(name);
         if (clazz == null) {
             throw findException(name);
         }
         try {
+            /**
+             * 先从实例缓存中获取该实例， 不存在则通过反射new一个，并放入缓存
+             */
             T instance = (T) EXTENSION_INSTANCES.get(clazz);
             if (instance == null) {
                 EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.newInstance());
                 instance = (T) EXTENSION_INSTANCES.get(clazz);
             }
+            /**
+             * 对实例进行注入依赖
+             */
             injectExtension(instance);
             Set<Class<?>> wrapperClasses = cachedWrapperClasses;
             if (CollectionUtils.isNotEmpty(wrapperClasses)) {
                 for (Class<?> wrapperClass : wrapperClasses) {
-                    instance = injectExtension((T) wrapperClass.getConstructor(type).newInstance(instance));
+                    T a = (T) wrapperClass.getConstructor(type).newInstance(instance);
+                    instance = injectExtension(a);
                 }
             }
             initExtension(instance);
@@ -651,11 +668,17 @@ public class ExtensionLoader<T> {
 
     private T injectExtension(T instance) {
 
+        /**
+         * getExtensionLoader(Class class)时会new
+         */
         if (objectFactory == null) {
             return instance;
         }
 
         try {
+            /**
+             * 遍历目标class的方法，获取setter方法
+             */
             for (Method method : instance.getClass().getMethods()) {
                 if (!isSetter(method)) {
                     continue;
@@ -666,13 +689,22 @@ public class ExtensionLoader<T> {
                 if (method.getAnnotation(DisableInject.class) != null) {
                     continue;
                 }
+                /**
+                 * 约定中, setter只有一个参数
+                 */
                 Class<?> pt = method.getParameterTypes()[0];
                 if (ReflectUtils.isPrimitives(pt)) {
                     continue;
                 }
 
                 try {
+                    // 获取该setter方法的目标属性名
                     String property = getSetterProperty(method);
+                    /**
+                     * 根据属性名和其class
+                     *  -> AdaptiveExtensionFactory（Dubbo 内部维护一个 ExtensionFactory 列表）
+                     *  -> SpringExtensionFactory (从Spring管理的bean中获取)
+                     */
                     Object object = objectFactory.getExtension(pt, property);
                     if (object != null) {
                         method.invoke(instance, object);
@@ -752,6 +784,9 @@ public class ExtensionLoader<T> {
 
         Map<String, Class<?>> extensionClasses = new HashMap<>();
 
+        /**
+         * 不同的加载策略有不同的路径
+         */
         for (LoadingStrategy strategy : strategies) {
             loadDirectory(extensionClasses, strategy.directory(), type.getName(), strategy.preferExtensionClassLoader(), strategy.overridden(), strategy.excludedPackages());
             loadDirectory(extensionClasses, strategy.directory(), type.getName().replace("org.apache", "com.alibaba"), strategy.preferExtensionClassLoader(), strategy.overridden(), strategy.excludedPackages());
@@ -1001,7 +1036,7 @@ public class ExtensionLoader<T> {
         }
     }
 
-    private Class<?> getAdaptiveExtensionClass() {
+    private Class<?>  getAdaptiveExtensionClass() {
         getExtensionClasses();
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;

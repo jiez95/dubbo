@@ -47,10 +47,10 @@ public class ReferenceConfigTest {
         application.setName("test-protocol-random-port");
 
         RegistryConfig registry = new RegistryConfig();
-        registry.setAddress("multicast://224.5.6.7:1234");
+        registry.setAddress("zookeeper://www.ankieandjie.cn:2181");
 
         ProtocolConfig protocol = new ProtocolConfig();
-        protocol.setName("mockprotocol");
+        protocol.setName("dubbo");
 
         ServiceConfig<DemoService> demoService;
         demoService = new ServiceConfig<DemoService>();
@@ -58,6 +58,7 @@ public class ReferenceConfigTest {
         demoService.setRef(new DemoServiceImpl());
         demoService.setApplication(application);
         demoService.setRegistry(registry);
+
         demoService.setProtocol(protocol);
 
         ReferenceConfig<DemoService> rc = new ReferenceConfig<DemoService>();
@@ -69,7 +70,8 @@ public class ReferenceConfigTest {
         try {
             System.setProperty("java.net.preferIPv4Stack", "true");
             demoService.export();
-            rc.get();
+            DemoService demoService1 = rc.get();
+            demoService1.echo(1);
             Assertions.assertTrue(!LOCAL_PROTOCOL.equalsIgnoreCase(
                     rc.getInvoker().getUrl().getProtocol()));
         } finally {
@@ -86,9 +88,9 @@ public class ReferenceConfigTest {
         ApplicationConfig application = new ApplicationConfig();
         application.setName("test-reference-retry");
         RegistryConfig registry = new RegistryConfig();
-        registry.setAddress("multicast://224.5.6.7:1234");
+        registry.setAddress("zookeeper://www.ankieandjie.cn:2181");
         ProtocolConfig protocol = new ProtocolConfig();
-        protocol.setName("mockprotocol");
+        protocol.setName("dubbo");
 
         ReferenceConfig<DemoService> rc = new ReferenceConfig<DemoService>();
         rc.setApplication(application);

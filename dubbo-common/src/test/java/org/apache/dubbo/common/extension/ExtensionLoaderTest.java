@@ -292,10 +292,14 @@ public class ExtensionLoaderTest {
     public void test_AddExtension_Adaptive_ExceptionWhenExistedAdaptive() throws Exception {
         ExtensionLoader<AddExt1> loader = getExtensionLoader(AddExt1.class);
 
-        loader.getAdaptiveExtension();
+        loader.addExtension("11332", AddExt1_ManualAdaptive.class);
+
+        AddExt1 adaptiveExtension = loader.getAdaptiveExtension();
+
+        System.out.println(adaptiveExtension.getClass().getName());
 
         try {
-            loader.addExtension(null, AddExt1_ManualAdaptive.class);
+            loader.addExtension("11332", AddExt1_ManualAdaptive.class);
             fail();
         } catch (IllegalStateException expected) {
             assertThat(expected.getMessage(), containsString("Adaptive Extension already exists (Extension interface org.apache.dubbo.common.extension.ext8_add.AddExt1)!"));

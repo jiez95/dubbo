@@ -206,6 +206,9 @@ public class RegistryProtocol implements Protocol {
 
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
         //export invoker
+        /**
+         * 导出服务
+         */
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
         // url to registry
@@ -214,6 +217,9 @@ public class RegistryProtocol implements Protocol {
 
         // decide if we need to delay publish
         boolean register = providerUrl.getParameter(REGISTER_KEY, true);
+        /**
+         * 远程注册
+         */
         if (register) {
             register(registryUrl, registeredProviderUrl);
         }
@@ -253,6 +259,9 @@ public class RegistryProtocol implements Protocol {
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker, URL providerUrl) {
         String key = getCacheKey(originInvoker);
 
+        /**
+         * 自适应SPI 根据协议 加载protocol
+         */
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {
             Invoker<?> invokerDelegate = new InvokerDelegate<>(originInvoker, providerUrl);
             return new ExporterChangeableWrapper<>((Exporter<T>) protocol.export(invokerDelegate), originInvoker);
@@ -439,11 +448,18 @@ public class RegistryProtocol implements Protocol {
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         url = getRegistryUrl(url);
+        // 根据URL通过SPI/ioc 获取注册中心实例
         Registry registry = registryFactory.getRegistry(url);
+
+        // 如果需要获取的就是注册中心实例，直接封装成Invoker返回
         if (RegistryService.class.equals(type)) {
             return proxyFactory.getInvoker((T) registry, type, url);
         }
 
+        /**
+         * 根据 group 配置决定 doRefer 第一个参数的类型
+         *  -> 如果group数量大于1 或者 是*采用 SPI获取名为mergeable的Cluster实例
+         */
         // group="a,b" or group="*"
         Map<String, String> qs = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
         String group = qs.get(GROUP_KEY);
@@ -460,25 +476,45 @@ public class RegistryProtocol implements Protocol {
     }
 
     private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        /**
+         * 设置注册中心路径配置
+         */
         RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
+        // 根据URL协议匹配的注册中心实例对象, 如ZookeeperRegistry
         directory.setRegistry(registry);
+        // 设置对应的导出协议对象, 这里是个代理类
         directory.setProtocol(protocol);
+
         // all attributes of REFER_KEY
         Map<String, String> parameters = new HashMap<String, String>(directory.getConsumerUrl().getParameters());
+        /**
+         * 根据配置获取订阅URL, 生成服务消费者链接
+         */
         URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
         if (directory.isShouldRegister()) {
             directory.setRegisteredConsumerUrl(subscribeUrl);
             registry.register(directory.getRegisteredConsumerUrl());
         }
         directory.buildRouterChain(subscribeUrl);
+
+        // 订阅 providers、configurators、routers 等节点数据
         directory.subscribe(toSubscribeUrl(subscribeUrl));
 
+        /**
+         * 根据对应的集群容错对象(Cluster),
+         * 把多个Invoker组装成一个执行链，返回最后一个插入的, 即 5 -> 4 -> 3 -> 2 -> 1
+         */
         Invoker<T> invoker = cluster.join(directory);
+
         List<RegistryProtocolListener> listeners = findRegistryProtocolListeners(url);
         if (CollectionUtils.isEmpty(listeners)) {
             return invoker;
         }
 
+        /**
+         * 把invoker和一些必要信息组装成一个 服务中心注册类型的Invoker并返回
+         * 这里的目的 应该是为了封装一些信息
+         */
         RegistryInvokerWrapper<T> registryInvokerWrapper = new RegistryInvokerWrapper<>(directory, cluster, invoker, subscribeUrl);
         for (RegistryProtocolListener listener : listeners) {
             listener.onRefer(this, registryInvokerWrapper);

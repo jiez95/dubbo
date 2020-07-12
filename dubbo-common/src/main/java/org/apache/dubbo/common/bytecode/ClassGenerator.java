@@ -387,4 +387,104 @@ public final class ClassGenerator {
     public static interface DC {
 
     } // dynamic class tag interface.
+
+    public static AtomicLong getClassNameCounter() {
+        return CLASS_NAME_COUNTER;
+    }
+
+    public static String getSimpleNameTag() {
+        return SIMPLE_NAME_TAG;
+    }
+
+    public static Map<ClassLoader, ClassPool> getPoolMap() {
+        return POOL_MAP;
+    }
+
+    public ClassPool getmPool() {
+        return mPool;
+    }
+
+    public void setmPool(ClassPool mPool) {
+        this.mPool = mPool;
+    }
+
+    public CtClass getmCtc() {
+        return mCtc;
+    }
+
+    public void setmCtc(CtClass mCtc) {
+        this.mCtc = mCtc;
+    }
+
+    public String getmClassName() {
+        return mClassName;
+    }
+
+    public void setmClassName(String mClassName) {
+        this.mClassName = mClassName;
+    }
+
+    public String getmSuperClass() {
+        return mSuperClass;
+    }
+
+    public void setmSuperClass(String mSuperClass) {
+        this.mSuperClass = mSuperClass;
+    }
+
+    public Set<String> getmInterfaces() {
+        return mInterfaces;
+    }
+
+    public void setmInterfaces(Set<String> mInterfaces) {
+        this.mInterfaces = mInterfaces;
+    }
+
+    public List<String> getmFields() {
+        return mFields;
+    }
+
+    public void setmFields(List<String> mFields) {
+        this.mFields = mFields;
+    }
+
+    public List<String> getmConstructors() {
+        return mConstructors;
+    }
+
+    public void setmConstructors(List<String> mConstructors) {
+        this.mConstructors = mConstructors;
+    }
+
+    public List<String> getmMethods() {
+        return mMethods;
+    }
+
+    public void setmMethods(List<String> mMethods) {
+        this.mMethods = mMethods;
+    }
+
+    public Map<String, Method> getmCopyMethods() {
+        return mCopyMethods;
+    }
+
+    public void setmCopyMethods(Map<String, Method> mCopyMethods) {
+        this.mCopyMethods = mCopyMethods;
+    }
+
+    public Map<String, Constructor<?>> getmCopyConstructors() {
+        return mCopyConstructors;
+    }
+
+    public void setmCopyConstructors(Map<String, Constructor<?>> mCopyConstructors) {
+        this.mCopyConstructors = mCopyConstructors;
+    }
+
+    public boolean ismDefaultConstructor() {
+        return mDefaultConstructor;
+    }
+
+    public void setmDefaultConstructor(boolean mDefaultConstructor) {
+        this.mDefaultConstructor = mDefaultConstructor;
+    }
 }

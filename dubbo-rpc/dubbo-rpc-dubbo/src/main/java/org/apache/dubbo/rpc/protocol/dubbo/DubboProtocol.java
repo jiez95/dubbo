@@ -427,6 +427,9 @@ public class DubboProtocol extends AbstractProtocol {
             shareClients = getSharedClient(url, connections);
         }
 
+        /**
+         * 获取连接
+         */
         ExchangeClient[] clients = new ExchangeClient[connections];
         for (int i = 0; i < clients.length; i++) {
             if (useShareConnect) {
@@ -448,9 +451,18 @@ public class DubboProtocol extends AbstractProtocol {
      */
     private List<ReferenceCountExchangeClient> getSharedClient(URL url, int connectNum) {
         String key = url.getAddress();
+        /**
+         * 根据URL地址 从缓存获取 Clients
+         */
         List<ReferenceCountExchangeClient> clients = referenceClientMap.get(key);
 
+        /**
+         * 判断获取到的 Clients 是否能用
+         */
         if (checkClientCanUse(clients)) {
+            /**
+             * 能用则集体+1并返回
+             */
             batchClientRefIncr(clients);
             return clients;
         }
